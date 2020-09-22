@@ -24,9 +24,10 @@ tokens :-
   $white ;
   "//".* ;
 
-  int { tok TokenTypeInt }
-  float { tok TokenTypeFloat }
-  bool { tok TokenTypeBool }
+  int { tok (TokenTypeDeclaration TokenTypeInt) }
+  float { tok (TokenTypeDeclaration TokenTypeFloat) }
+  bool { tok (TokenTypeDeclaration TokenTypeBool) }
+  string { tok (TokenTypeDeclaration TokenTypeString) }
 
   if { tok TokenIf }
   else { tok TokenElse }
