@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 9b4adcef888a930f8516f28cfc409e92bdc99f688eb5d153d9fc51b8cef69f75
+-- hash: 552bfc6a6ff74841b836765aa24514d132af8954beae2461d9eca1ab817a24d2
 
 name:           c-interpreter
 version:        0.1.0.0
@@ -28,13 +28,16 @@ source-repository head
 library
   exposed-modules:
       Language
+      Language.Lexer
+      Language.Syntax
       Lib
   other-modules:
       Paths_c_interpreter
   hs-source-dirs:
       src
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
   default-language: Haskell2010
 
 executable c-interpreter-exe
@@ -44,8 +47,12 @@ executable c-interpreter-exe
   hs-source-dirs:
       app
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-tools:
+      alex
+    , happy
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , c-interpreter
   default-language: Haskell2010
 
@@ -57,7 +64,11 @@ test-suite c-interpreter-test
   hs-source-dirs:
       test
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-tools:
+      alex
+    , happy
   build-depends:
-      base >=4.7 && <5
+      array
+    , base >=4.7 && <5
     , c-interpreter
   default-language: Haskell2010

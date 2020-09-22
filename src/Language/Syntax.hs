@@ -3,8 +3,8 @@ module Language.Syntax where
 data TokenType
   = TokenTypeInt
   | TokenTypeFloat
-  | TokenTypeDouble
   | TokenTypeBool
+  | TokenTypeString
   deriving (Eq, Show)
 
 data TokenKeyword
@@ -46,13 +46,13 @@ data TokenOperator
   = TokenArithmeticOperator
   | TokenBoolOperator
   | TokenAssignment
+  | TokenEq
   deriving (Eq, Show)
 
 data TokenValue
   = TokenString String
   | TokenInt Int
   | TokenFloat Float
-  | TokenDouble Double
   | TokenBool Bool
   deriving (Eq, Show)
 
@@ -71,3 +71,4 @@ data Token
   | TokenValue
   -- End of the file
   | TokenEOF
+  deriving (Eq, Show)
