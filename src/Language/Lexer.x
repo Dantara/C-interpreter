@@ -13,7 +13,7 @@ import Language.Syntax
 $digit = 0-9
 $letter = [a-zA-Z]
 
-@string = \" [$digit $letter \_ \']+ \"
+@string = \" [$digit $letter \_ \  \']* \"
 @float = $digit+ [ \. ] $digit*
 @int = $digit+
 $eol = [\n]
@@ -63,7 +63,7 @@ tokens :-
 
   @string { tokValue TokenTypeString }
 
-  $letter [$letter $digit \_] { tokIdentifier }
+  $letter [$letter $digit \_]* { tokIdentifier }
 
 {
 
