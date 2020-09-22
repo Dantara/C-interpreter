@@ -1,14 +1,17 @@
+{-# LANGUAGE NoMonomorphismRestriction #-}
+
 module Language.Syntax where
 
 data TokenType
   = TokenTypeInt
   | TokenTypeFloat
-  | TokenTypeDouble
   | TokenTypeBool
+  | TokenTypeString
   deriving (Eq, Show)
 
-data TokenKeyword
-  -- Conditions
+data Token
+
+  -- KEYWORDS
   = TokenIf
   | TokenElse
   -- Loops
@@ -16,58 +19,52 @@ data TokenKeyword
   | TokenWhile
   -- Return
   | TokenReturn
-  deriving (Eq, Show)
 
-data TokenDelimiter
-  = TokenComma
+
+  -- DELIMITERS
+  | TokenComma
   | TokenSemicolon
   -- Brackets
   | TokenOpenRoundBracket
   | TokenCloseRoundBracket
   | TokenOpenCurlyBracket
   | TokenCloseCurlyBracket
-  deriving (Eq, Show)
+  | TokenDelimiter
 
-data TokenArithmeticOperator
-  = TokenPlus
+
+  -- OPERATORS
+  -- Arithmetic operators
+  | TokenPlus
   | TokenMinus
   | TokenMultiply
   | TokenDivide
-  deriving (Eq, Show)
 
-data TokenBoolOperator
-  = TokenAnd
+  -- Boolean operators
+  | TokenAnd
   | TokenOr
   | TokenNot
   | TokenXor
-  deriving (Eq, Show)
+  | TokenEq
 
-data TokenOperator
-  = TokenArithmeticOperator
-  | TokenBoolOperator
+  -- Assignment
   | TokenAssignment
-  deriving (Eq, Show)
 
-data TokenValue
-  = TokenString String
+
+  -- TYPE
+  | TokenTypeDeclaration TokenType
+
+
+  -- IDENTIFIER
+  | TokenIndentifier String
+
+
+  -- VALUE
+  | TokenString String
   | TokenInt Int
   | TokenFloat Float
-  | TokenDouble Double
   | TokenBool Bool
-  deriving (Eq, Show)
 
-data Token
-  -- Keyword
-  = TokenKeyword
-  -- Delimiter
-  | TokenDelimiter
-  -- Operator
-  | TokenOperator
-  -- Type
-  | TokenTypeDeclaration TokenType
-  -- Identifer
-  | TokenIndentifier String
-  -- Value
-  | TokenValue
-  -- End of the file
+
+  -- EOF
   | TokenEOF
+  deriving (Eq, Show)
