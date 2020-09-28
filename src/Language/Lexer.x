@@ -4,7 +4,7 @@
 
 module Language.Lexer (scanTokens) where
 
-import Language.Syntax
+import Language.Syntax.Token
 
 }
 
@@ -50,10 +50,16 @@ tokens :-
   "&&" { tok TokenAnd }
   "||" { tok TokenOr }
   \! { tok TokenNot }
-  \^ { tok TokenXor }
 
-  "==" { tok TokenAssignment }
-  \= { tok TokenEq }
+  "==" { tok TokenEq }
+  "!=" { tok TokenNotEq }
+  \> { tok TokenGreater }
+  \< { tok TokenLess }
+  ">=" { tok TokenGreaterOrEq  }
+  "<=" { tok TokenLessOrEq  }
+
+  \= { tok TokenAssignment }
+
 
   @float { tokValue TokenTypeFloat }
   @int { tokValue TokenTypeInt }
