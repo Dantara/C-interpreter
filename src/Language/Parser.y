@@ -153,6 +153,7 @@ LDec : VarDec { LocalVariableDeclaration $1 }
      | LoopDec { LoopDeclation $1 }
      | IfDec { IfDeclaration $1 }
      | Expr { LocalExpr $1 }
+     | Return { Return $1 }
 
 FuncCall : Id "(" FParams ")" { FunctionCall $1 $3 }
 
@@ -177,6 +178,9 @@ ForUpd : {- empty -} { Nothing }
 
 IfDec : if "(" Cond ")" "{" LDecs "}" else "{" LDecs "}" { If $3 $6 $10 }
       | if "(" Cond ")" "{" LDecs "}" { If $3 $6 [] }
+
+Return : return Id { ReturnVariable $2 }
+       | return Expr { ReturnExpr $2 }
 
 Id : name { Identifier $1 }
 

@@ -94,13 +94,18 @@ data FuncParam
   | VariableParam Identifier
   deriving (Eq, Show)
 
--- Add return
 data LocalDeclaration
   = LocalVariableDeclaration VariableDeclaration
   | FunctionCall Identifier [FuncParam]
   | LoopDeclation Loop
   | IfDeclaration If
   | LocalExpr Expr
+  | Return Return
+  deriving (Eq, Show)
+
+data Return
+  = ReturnVariable Identifier
+  | ReturnExpr Expr
   deriving (Eq, Show)
 
 data If = If {
