@@ -4,11 +4,11 @@ newtype AST = AST [GlobalDeclaration] deriving (Eq, Show)
 
 data GlobalDeclaration
   = FunctionDeclaration Function
-  | GlobalVariableDeclaration Variable (Maybe Expr)
-  | GlobalVariableAssignment Identifier Expr
+  | GlobalVariableDeclaration VariableDeclaration
+  | GlobalExpr Expr
   deriving (Eq, Show)
 
-data Variable = Variable Identifier Value deriving (Eq, Show)
+data Variable = Variable Identifier (Maybe Value) deriving (Eq, Show)
 
 data Expr = Expr UnaryExpr deriving (Eq, Show)
 
@@ -70,16 +70,50 @@ newtype Value = Value Type deriving (Eq, Show)
 newtype Identifier = Identifier String deriving (Eq, Show)
 
 data Function = Function {
-    fHeader :: Header
-  , fBody   :: [LocalDeclaration]
+    funcName :: Identifier
+  , funcType :: Type
+  , funcArgs :: [Variable]
+  , funcBody :: [LocalDeclaration]
                          } deriving (Eq, Show)
 
-data Header = Header {
-    hType :: Type
-  , hArgs :: [Variable]
-                     } deriving (Eq, Show)
-
 data LocalDeclaration
-  = VariableDeclaration Variable
+  = LocalVariableDeclaration VariableDeclaration
   | FunctionCall Identifier [Value]
+  | LoopDeclation Loop
+  | IfDeclaration If
+  | LocalExpr Expr
   deriving (Eq, Show)
+
+data If = If {
+  ifCond     :: Expr
+  , ifBody   :: [LocalDeclaration]
+  , elseBody :: Maybe [LocalDeclaration]
+             } deriving (Eq, Show)
+
+data VariableDeclaration
+  = VariableDeclaration Variable (Maybe Expr)
+  | VariableAssignment VariableUpdate
+  deriving (Eq, Show)
+
+data VariableUpdate = VariableUpdate Identifier Expr deriving (Eq, Show)
+
+data Loop
+  = ForLoop For
+  | WhileLoop While
+  deriving (Eq, Show)
+
+data For = For {
+    forHeader :: ForHeader
+  , forBody   :: [LocalDeclaration]
+             } deriving (Eq, Show)
+
+data While = While {
+    whileHeader :: Expr
+  , whileBody   :: [LocalDeclaration]
+                   } deriving (Eq, Show)
+
+data ForHeader = ForHeader {
+    forVar  :: Maybe VariableDeclaration
+  , forCond :: Maybe Expr
+  , forUpd  :: Maybe VariableUpdate
+                           } deriving (Eq, Show)
