@@ -66,8 +66,6 @@ data OrExpr
   | OrValue Value
   deriving (Eq, Show)
 
--- Check whether we need type arguments or not
--- Maybe should use GADTs
 data Type
   = TypeInt
   | TypeFloat
@@ -91,18 +89,24 @@ data Function = Function {
   , funcBody :: [LocalDeclaration]
                          } deriving (Eq, Show)
 
+data FuncParam
+  = ExprParam Expr
+  | VariableParam Identifier
+  deriving (Eq, Show)
+
+-- Add return
 data LocalDeclaration
   = LocalVariableDeclaration VariableDeclaration
-  | FunctionCall Identifier [Value]
+  | FunctionCall Identifier [FuncParam]
   | LoopDeclation Loop
   | IfDeclaration If
   | LocalExpr Expr
   deriving (Eq, Show)
 
 data If = If {
-    ifCond   :: Expr
+    ifCond   :: Maybe Expr
   , ifBody   :: [LocalDeclaration]
-  , elseBody :: Maybe [LocalDeclaration]
+  , elseBody :: [LocalDeclaration]
              } deriving (Eq, Show)
 
 data VariableDeclaration
@@ -122,13 +126,13 @@ data For = For {
   , forBody   :: [LocalDeclaration]
              } deriving (Eq, Show)
 
-data While = While {
-    whileHeader :: Expr
-  , whileBody   :: [LocalDeclaration]
-                   } deriving (Eq, Show)
-
 data ForHeader = ForHeader {
     forVar  :: Maybe VariableDeclaration
   , forCond :: Maybe Expr
   , forUpd  :: Maybe VariableUpdate
                            } deriving (Eq, Show)
+
+data While = While {
+    whileHeader :: Maybe Expr
+  , whileBody   :: [LocalDeclaration]
+                   } deriving (Eq, Show)
