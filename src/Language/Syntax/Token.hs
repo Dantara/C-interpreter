@@ -26,7 +26,6 @@ data Token
   | TokenCloseRoundBracket
   | TokenOpenCurlyBracket
   | TokenCloseCurlyBracket
-  | TokenDelimiter
 
 
   -- OPERATORS
@@ -41,7 +40,7 @@ data Token
   | TokenOr
   | TokenNot
 
-  -- RelationalOperators
+  -- Relational operators
   | TokenEq
   | TokenNotEq
   | TokenGreater

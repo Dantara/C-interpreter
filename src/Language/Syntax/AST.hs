@@ -8,9 +8,13 @@ data GlobalDeclaration
   | GlobalExpr Expr
   deriving (Eq, Show)
 
-data Variable = Variable Identifier (Maybe Value) deriving (Eq, Show)
+data Variable = Variable {
+    varName  :: Identifier
+  , varType  :: Type
+  , varValue :: Maybe Value
+                         } deriving (Eq, Show)
 
-data Expr = Expr UnaryExpr deriving (Eq, Show)
+newtype Expr = Expr UnaryExpr deriving (Eq, Show)
 
 data UnaryExpr
   = UnaryExpr UnaryAction MultExpr
@@ -57,16 +61,27 @@ data AndExpr
   | AndValue Value
   deriving (Eq, Show)
 
-newtype OrExpr = OrExpr Value deriving (Eq, Show)
-
-data Type
-  = TypeInt Int
-  | TypeFloat Float
-  | TypeString String
-  | TypeBool Bool
+data OrExpr
+  = OrExpr Value Value
+  | OrValue Value
   deriving (Eq, Show)
 
-newtype Value = Value Type deriving (Eq, Show)
+-- Check whether we need type arguments or not
+-- Maybe should use GADTs
+data Type
+  = TypeInt
+  | TypeFloat
+  | TypeString
+  | TypeBool
+  deriving (Eq, Show)
+
+data Value
+  = IntValue Int
+  | FloatValue Float
+  | StringValue String
+  | BoolValue Bool
+  deriving (Eq, Show)
+
 newtype Identifier = Identifier String deriving (Eq, Show)
 
 data Function = Function {
@@ -85,7 +100,7 @@ data LocalDeclaration
   deriving (Eq, Show)
 
 data If = If {
-  ifCond     :: Expr
+    ifCond   :: Expr
   , ifBody   :: [LocalDeclaration]
   , elseBody :: Maybe [LocalDeclaration]
              } deriving (Eq, Show)
