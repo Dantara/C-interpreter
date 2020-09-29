@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 552bfc6a6ff74841b836765aa24514d132af8954beae2461d9eca1ab817a24d2
+-- hash: 5d5e8fe20a508d6575d62b27cccae5d2ab10f438bb0229d958717148d4949273
 
 name:           c-interpreter
 version:        0.1.0.0
@@ -30,6 +30,8 @@ library
       Language
       Language.Lexer
       Language.Syntax
+      Language.Syntax.AST
+      Language.Syntax.Token
       Lib
   other-modules:
       Paths_c_interpreter
