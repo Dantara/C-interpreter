@@ -11,7 +11,7 @@ import Language.Syntax.AST
 %tokentype { Token }
 
 %monad { Either String } { (>>=) } { return }
-%error { happyError }
+%error { parseError }
 
 %token
   if { Token _ TokenIf }
@@ -22,8 +22,8 @@ import Language.Syntax.AST
 
   "," { Token _ TokenComma }
   ";" { Token _ TokenSemicolon }
-  ")" { Token _ TokenOpenRoundBracket  }
-  "(" { Token _ TokenCloseRoundBracket  }
+  "(" { Token _ TokenOpenRoundBracket  }
+  ")" { Token _ TokenCloseRoundBracket  }
   "{" { Token _ TokenOpenCurlyBracket  }
   "}" { Token _ TokenCloseCurlyBracket  }
 
@@ -76,13 +76,14 @@ Type : int { TypeInt }
      | string { TypeString }
 
 FArgs : {- empty -} { [] }
+      | FArg { [$1] }
       | FArg "," FArgs { $1 : $3 }
 
 FArg : Type Id { Variable $2 $1 Nothing }
 
-VarDec : Type Id { VariableDeclaration (Variable $2 $1 Nothing) Nothing }
-    | Type Id "=" Expr { VariableDeclaration (Variable $2 $1 Nothing) (Just $4) }
-    | Id "=" Expr { VariableAssignment (VariableUpdate $1 $3) }
+VarDec : Type Id "=" Expr { VariableDeclaration (Variable $2 $1 Nothing) (Just $4) }
+       | Type Id { VariableDeclaration (Variable $2 $1 Nothing) Nothing }
+       | Id "=" Expr { VariableAssignment (VariableUpdate $1 $3) }
 
 Expr : UnaryExpr { Expr $1 }
      | "(" UnaryExpr ")" {Expr $2 }
@@ -160,6 +161,7 @@ LDec : VarDec ";" { LocalVariableDeclaration $1 }
 FuncCall : Id "(" FParams ")" { FunctionCall $1 $3 }
 
 FParams : {- empty -} { [] }
+      | FParam { [$1] }
       | FParam "," FParams { $1 : $3 }
 
 FParam : Expr { ExprParam $1 }
@@ -188,10 +190,7 @@ Id : name { Identifier $1 }
 
 {
 
--- parseError :: [Token] -> Either String a
--- parseError ts = Left . show "Syntax error"
-
-happyError :: [Token] -> Either String a
-happyError t = Left $ "Syntax error: " <> show t
+parseError :: [Token] -> Either String a
+parseError t = Left $ "Syntax error: " <> show t
 
 }
