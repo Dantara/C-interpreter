@@ -7,7 +7,7 @@ import Language.Syntax.AST
 
 }
 
-%name parse
+%name parseTokens
 %tokentype { Token }
 
 %monad { Either String } { (>>=) } { return }
