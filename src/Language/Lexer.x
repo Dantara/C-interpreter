@@ -1,7 +1,5 @@
 {
 
-{-# LANGUAGE NoMonomorphismRestriction          #-}
-
 module Language.Lexer (scanTokens) where
 
 import Language.Syntax.Token

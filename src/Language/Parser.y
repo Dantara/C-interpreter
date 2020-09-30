@@ -90,8 +90,10 @@ Expr : UnaryExpr { Expr $1 }
 
 UnaryExpr : "+" "(" MultExpr ")" { UnaryExpr UnaryPositive $3 }
           | "-" "(" MultExpr ")" { UnaryExpr UnaryNegative $3 }
+          | "!" "(" MultExpr ")" { UnaryExpr UnaryNot $3 }
           | "+" MultExpr { UnaryExpr UnaryPositive $2 }
           | "-" MultExpr { UnaryExpr UnaryNegative $2 }
+          | "!" MultExpr { UnaryExpr UnaryNot $2 }
           | "(" MultExpr ")" { UnaryExpr UnaryPositive $2 }
           | Value { UnaryValue $1 }
 
@@ -107,17 +109,39 @@ MultExpr : "(" AddExpr ")" "*" "(" AddExpr ")" { MultExpr Multiply $2 $6 }
 
          | Value { MultValue $1 }
 
-AddExpr : "(" EqExpr ")" "+" "(" EqExpr ")" { AddExpr Addition $2 $6 }
-        | EqExpr "+" "(" EqExpr ")" { AddExpr Addition $1 $4 }
-        | "(" EqExpr ")" "+" EqExpr { AddExpr Addition $2 $5 }
-        | EqExpr "+" EqExpr { AddExpr Addition $1 $3 }
+AddExpr : "(" RelationExpr ")" "+" "(" RelationExpr ")" { AddExpr Addition $2 $6 }
+        | RelationExpr "+" "(" RelationExpr ")" { AddExpr Addition $1 $4 }
+        | "(" RelationExpr ")" "+" RelationExpr { AddExpr Addition $2 $5 }
+        | RelationExpr "+" RelationExpr { AddExpr Addition $1 $3 }
 
-        | "(" EqExpr ")" "-" "(" EqExpr ")" { AddExpr Substraction $2 $6 }
-        | EqExpr "-" "(" EqExpr ")" { AddExpr Substraction $1 $4 }
-        | "(" EqExpr ")" "-" EqExpr { AddExpr Substraction $2 $5 }
-        | EqExpr "-" EqExpr { AddExpr Substraction $1 $3 }
+        | "(" RelationExpr ")" "-" "(" RelationExpr ")" { AddExpr Substraction $2 $6 }
+        | RelationExpr "-" "(" RelationExpr ")" { AddExpr Substraction $1 $4 }
+        | "(" RelationExpr ")" "-" RelationExpr { AddExpr Substraction $2 $5 }
+        | RelationExpr "-" RelationExpr { AddExpr Substraction $1 $3 }
 
         | Value { AddValue $1 }
+
+RelationExpr : "(" EqExpr ")" ">" "(" EqExpr ")" { RelationExpr Greater $2 $6 }
+             | EqExpr ">" "(" EqExpr ")" { RelationExpr Greater $1 $4 }
+             | "(" EqExpr ")" ">" EqExpr { RelationExpr Greater $2 $5 }
+             | EqExpr ">" EqExpr { RelationExpr Greater $1 $3 }
+
+             | "(" EqExpr ")" "<" "(" EqExpr ")" { RelationExpr Less $2 $6 }
+             | EqExpr "<" "(" EqExpr ")" { RelationExpr Less $1 $4 }
+             | "(" EqExpr ")" "<" EqExpr { RelationExpr Less $2 $5 }
+             | EqExpr "<" EqExpr { RelationExpr Less $1 $3 }
+
+             | "(" EqExpr ")" ">=" "(" EqExpr ")" { RelationExpr GreaterOrEq $2 $6 }
+             | EqExpr ">=" "(" EqExpr ")" { RelationExpr GreaterOrEq $1 $4 }
+             | "(" EqExpr ")" ">=" EqExpr { RelationExpr GreaterOrEq $2 $5 }
+             | EqExpr ">=" EqExpr { RelationExpr GreaterOrEq $1 $3 }
+
+             | "(" EqExpr ")" "<=" "(" EqExpr ")" { RelationExpr LessOrEq $2 $6 }
+             | EqExpr "<=" "(" EqExpr ")" { RelationExpr LessOrEq $1 $4 }
+             | "(" EqExpr ")" "<=" EqExpr { RelationExpr LessOrEq $2 $5 }
+             | EqExpr "<=" EqExpr { RelationExpr LessOrEq $1 $3 }
+
+             | Value { RelationValue $1 }
 
 EqExpr : "(" AndExpr ")" "==" "(" AndExpr ")" { EqExpr Equality $2 $6 }
        | AndExpr "==" "(" AndExpr ")" { EqExpr Equality $1 $4 }

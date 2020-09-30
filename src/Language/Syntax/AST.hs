@@ -24,6 +24,7 @@ data UnaryExpr
 data UnaryAction
   = UnaryNegative
   | UnaryPositive
+  | UnaryNot
   deriving (Eq, Show)
 
 data MultExpr
@@ -37,13 +38,25 @@ data MultAction
   deriving (Eq, Show)
 
 data AddExpr
-  = AddExpr AddAction EqExpr EqExpr
+  = AddExpr AddAction RelationExpr RelationExpr
   | AddValue Value
   deriving (Eq, Show)
 
 data AddAction
   = Addition
   | Substraction
+  deriving (Eq, Show)
+
+data RelationExpr
+  = RelationExpr RelationAction EqExpr EqExpr
+  | RelationValue Value
+  deriving (Eq, Show)
+
+data RelationAction
+  = Greater
+  | Less
+  | GreaterOrEq
+  | LessOrEq
   deriving (Eq, Show)
 
 data EqExpr
