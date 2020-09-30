@@ -82,6 +82,7 @@ data OrExpr
 data BaseExpr
   = ValueExpr Value
   | VarExpr Identifier
+  | FunctionCall Identifier [Expr]
   deriving (Eq, Show)
 
 data Type
@@ -109,7 +110,6 @@ data Function = Function {
 
 data LocalDeclaration
   = LocalVariableDeclaration VariableDeclaration
-  | FunctionCall Identifier [Expr]
   | LoopDeclation Loop
   | IfDeclaration If
   | LocalExpr Expr

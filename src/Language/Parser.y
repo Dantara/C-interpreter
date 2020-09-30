@@ -126,6 +126,7 @@ OrExpr : "(" OrExpr ")" { $2 }
          | BaseExpr { OrRawExpr $1 }
 
 BaseExpr : "(" BaseExpr ")" { $2 }
+         | FuncCall { $1 }
          | Value { ValueExpr $1 }
          | Id { VarExpr $1 }
 
@@ -134,21 +135,20 @@ Value : intVal { IntValue $1 }
       | strVal { StringValue $1 }
       | boolVal { BoolValue $1 }
 
-LDecs : {- empty -} { [] }
-      | LDec LDecs { $1 : $2 }
-
-LDec : VarDec ";" { LocalVariableDeclaration $1 }
-     | FuncCall ";" { $1 }
-     | LoopDec { LoopDeclation $1 }
-     | IfDec { IfDeclaration $1 }
-     | Expr ";" { LocalExpr $1 }
-     | Return ";" { ReturnCall $1 }
-
 FuncCall : Id "(" FParams ")" { FunctionCall $1 $3 }
 
 FParams : {- empty -} { [] }
       | Expr { [$1] }
       | Expr "," FParams { $1 : $3 }
+     
+LDecs : {- empty -} { [] }
+      | LDec LDecs { $1 : $2 }
+
+LDec : VarDec ";" { LocalVariableDeclaration $1 }
+     | LoopDec { LoopDeclation $1 }
+     | IfDec { IfDeclaration $1 }
+     | Expr ";" { LocalExpr $1 }
+     | Return ";" { ReturnCall $1 }
 
 LoopDec : for "(" ForVar ";" Cond ";" ForUpd ")" "{" LDecs "}"
           { ForLoop (For (ForHeader $3 $5 $7) $10) }
@@ -173,6 +173,19 @@ Id : name { Identifier $1 }
 {
 
 parseError :: [Token] -> Either String a
-parseError t = Left $ "Syntax error: " <> show t
+parseError ts = Left
+  $ mconcat [
+    "Syntax error detected!\n\n"
+  , "Line: "
+  , show l
+  , "\n"
+  , "Column: "
+  , show c
+  , "\n"
+  , "Token: "
+  , show tc
+            ]
+  where
+    (Token (l, c) tc) = head ts
 
 }
