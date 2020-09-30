@@ -107,24 +107,16 @@ data Function = Function {
   , funcBody :: [LocalDeclaration]
                          } deriving (Eq, Show)
 
-data FuncParam
-  = ExprParam Expr
-  | VariableParam Identifier
-  deriving (Eq, Show)
-
 data LocalDeclaration
   = LocalVariableDeclaration VariableDeclaration
-  | FunctionCall Identifier [FuncParam]
+  | FunctionCall Identifier [Expr]
   | LoopDeclation Loop
   | IfDeclaration If
   | LocalExpr Expr
-  | Return Return
+  | ReturnCall Return
   deriving (Eq, Show)
 
-data Return
-  = ReturnVariable Identifier
-  | ReturnExpr Expr
-  deriving (Eq, Show)
+newtype Return = Return Expr deriving (Eq, Show)
 
 data If = If {
     ifCond   :: Maybe Expr

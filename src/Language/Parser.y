@@ -142,16 +142,13 @@ LDec : VarDec ";" { LocalVariableDeclaration $1 }
      | LoopDec { LoopDeclation $1 }
      | IfDec { IfDeclaration $1 }
      | Expr ";" { LocalExpr $1 }
-     | Return ";" { Return $1 }
+     | Return ";" { ReturnCall $1 }
 
 FuncCall : Id "(" FParams ")" { FunctionCall $1 $3 }
 
 FParams : {- empty -} { [] }
-      | FParam { [$1] }
-      | FParam "," FParams { $1 : $3 }
-
-FParam : Expr { ExprParam $1 }
-       | Id { VariableParam $1 }
+      | Expr { [$1] }
+      | Expr "," FParams { $1 : $3 }
 
 LoopDec : for "(" ForVar ";" Cond ";" ForUpd ")" "{" LDecs "}"
           { ForLoop (For (ForHeader $3 $5 $7) $10) }
@@ -169,8 +166,7 @@ ForUpd : {- empty -} { Nothing }
 IfDec : if "(" Cond ")" "{" LDecs "}" else "{" LDecs "}" { If $3 $6 $10 }
       | if "(" Cond ")" "{" LDecs "}" { If $3 $6 [] }
 
-Return : return Id { ReturnVariable $2 }
-       | return Expr { ReturnExpr $2 }
+Return : return Expr { Return $2 }
 
 Id : name { Identifier $1 }
 
