@@ -1,13 +1,10 @@
 module Language.Syntax.Token where
 
-data TokenType
-  = TokenTypeInt
-  | TokenTypeFloat
-  | TokenTypeBool
-  | TokenTypeString
-  deriving (Eq, Show)
+data Token = Token TokenPosition TokenClass deriving (Eq, Show)
 
-data Token
+type TokenPosition = (Int, Int)
+
+data TokenClass
   -- KEYWORDS
   = TokenIf
   | TokenElse
@@ -70,4 +67,11 @@ data Token
 
   -- EOF
   | TokenEOF
+  deriving (Eq, Show)
+
+data TokenType
+  = TokenTypeInt
+  | TokenTypeFloat
+  | TokenTypeBool
+  | TokenTypeString
   deriving (Eq, Show)

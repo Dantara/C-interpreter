@@ -8,7 +8,7 @@ import Language.Syntax.Token
 
 }
 
-%wrapper "basic"
+%wrapper "posn"
 
 $digit = 0-9
 $letter = [a-zA-Z]
@@ -73,19 +73,22 @@ tokens :-
 
 {
 
-tok :: Token -> String -> Token
-tok t _ = t
+tok :: TokenClass -> AlexPosn -> String -> Token
+tok t p _ = Token (posnToPair p) t
 
-tokValue :: TokenType -> String -> Token
-tokValue TokenTypeString s = TokenString s
-tokValue TokenTypeInt s = TokenInt (read s)
-tokValue TokenTypeFloat s = TokenFloat (read s)
-tokValue TokenTypeBool s
-  | s == "0" = TokenBool False
-  | otherwise = TokenBool True
+posnToPair :: AlexPosn -> (Int, Int)
+posnToPair (AlexPn _ x y) = (x, y)
 
-tokIdentifier :: String -> Token
-tokIdentifier s = TokenIndentifier s
+tokValue :: TokenType -> AlexPosn -> String -> Token
+tokValue TokenTypeString p s = Token (posnToPair p) (TokenString s)
+tokValue TokenTypeInt p s = Token (posnToPair p) (TokenInt (read s))
+tokValue TokenTypeFloat p s = Token (posnToPair p) (TokenFloat (read s))
+tokValue TokenTypeBool p s
+  | s == "0" = Token (posnToPair p) (TokenBool False)
+  | otherwise = Token (posnToPair p) (TokenBool True)
+
+tokIdentifier :: AlexPosn -> String -> Token
+tokIdentifier p s = Token (posnToPair p) (TokenIndentifier s)
 
 scanTokens :: String -> [Token]
 scanTokens = alexScanTokens

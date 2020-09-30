@@ -9,51 +9,53 @@ import Language.Syntax.AST
 
 %name parse
 %tokentype { Token }
-%error { parseError }
+
+%monad { Either String } { (>>=) } { return }
+%error { happyError }
 
 %token
-  if { TokenIf }
-  else { TokenElse }
-  for { TokenFor }
-  while { TokenWhile }
-  return { TokenReturn }
+  if { Token _ TokenIf }
+  else { Token _ TokenElse }
+  for { Token _ TokenFor }
+  while { Token _ TokenWhile }
+  return { Token _ TokenReturn }
 
-  "," { TokenComma }
-  ";" { TokenSemicolon }
-  ")" { TokenOpenRoundBracket  }
-  "(" { TokenCloseRoundBracket  }
-  "{" { TokenOpenCurlyBracket  }
-  "}" { TokenCloseCurlyBracket  }
+  "," { Token _ TokenComma }
+  ";" { Token _ TokenSemicolon }
+  ")" { Token _ TokenOpenRoundBracket  }
+  "(" { Token _ TokenCloseRoundBracket  }
+  "{" { Token _ TokenOpenCurlyBracket  }
+  "}" { Token _ TokenCloseCurlyBracket  }
 
-  "+" { TokenPlus }
-  "-" { TokenMinus }
-  "*" { TokenMultiply }
-  "/" { TokenDivide }
+  "+" { Token _ TokenPlus }
+  "-" { Token _ TokenMinus }
+  "*" { Token _ TokenMultiply }
+  "/" { Token _ TokenDivide }
 
-  "&&" { TokenAnd }
-  "||" { TokenOr }
-  "!" { TokenNot }
+  "&&" { Token _ TokenAnd }
+  "||" { Token _ TokenOr }
+  "!" { Token _ TokenNot }
 
-  "==" { TokenEq }
-  "!=" { TokenNotEq }
-  ">" { TokenGreater }
-  "<" { TokenLess }
-  ">=" { TokenGreaterOrEq }
-  "<=" { TokenLessOrEq }
+  "==" { Token _ TokenEq }
+  "!=" { Token _ TokenNotEq }
+  ">" { Token _ TokenGreater }
+  "<" { Token _ TokenLess }
+  ">=" { Token _ TokenGreaterOrEq }
+  "<=" { Token _ TokenLessOrEq }
 
-  "=" { TokenAssignment }
+  "=" { Token _ TokenAssignment }
 
-  int { TokenTypeDeclaration TokenTypeInt }
-  float { TokenTypeDeclaration TokenTypeFloat }
-  bool { TokenTypeDeclaration TokenTypeBool }
-  string { TokenTypeDeclaration TokenTypeString }
+  int { Token _ (TokenTypeDeclaration TokenTypeInt) }
+  float { Token _ (TokenTypeDeclaration TokenTypeFloat) }
+  bool { Token _ (TokenTypeDeclaration TokenTypeBool) }
+  string { Token _ (TokenTypeDeclaration TokenTypeString) }
 
-  name { TokenIndentifier $$ }
+  name { Token _ (TokenIndentifier $$) }
 
-  intVal { TokenInt $$ }
-  floatVal { TokenFloat $$ }
-  strVal { TokenString $$ }
-  boolVal { TokenBool $$ }
+  intVal { Token _ (TokenInt $$) }
+  floatVal { Token _ (TokenFloat $$) }
+  strVal { Token _ (TokenString $$) }
+  boolVal { Token _ (TokenBool $$) }
 
 %%
 
@@ -63,8 +65,8 @@ GDecs : GDec { [$1] }
       | GDec GDecs { $1 : $2 }
 
 GDec : Func { FunctionDeclaration $1 }
-     | VarDec { GlobalVariableDeclaration $1 }
-     | Expr { GlobalExpr $1 }
+     | VarDec ";" { GlobalVariableDeclaration $1 }
+     | Expr ";" { GlobalExpr $1 }
 
 Func : Type Id "(" FArgs ")" "{" LDecs "}" { Function $2 $1 $4 $7 }
 
@@ -148,12 +150,12 @@ Value : intVal { IntValue $1 }
 LDecs : {- empty -} { [] }
       | LDec LDecs { $1 : $2 }
 
-LDec : VarDec { LocalVariableDeclaration $1 }
-     | FuncCall { $1 }
+LDec : VarDec ";" { LocalVariableDeclaration $1 }
+     | FuncCall ";" { $1 }
      | LoopDec { LoopDeclation $1 }
      | IfDec { IfDeclaration $1 }
-     | Expr { LocalExpr $1 }
-     | Return { Return $1 }
+     | Expr ";" { LocalExpr $1 }
+     | Return ";" { Return $1 }
 
 FuncCall : Id "(" FParams ")" { FunctionCall $1 $3 }
 
@@ -186,7 +188,10 @@ Id : name { Identifier $1 }
 
 {
 
-parseError :: [Token] -> a
-parseError _ = error "Syntax error"
+-- parseError :: [Token] -> Either String a
+-- parseError ts = Left . show "Syntax error"
+
+happyError :: [Token] -> Either String a
+happyError t = Left $ "Syntax error: " <> show t
 
 }
