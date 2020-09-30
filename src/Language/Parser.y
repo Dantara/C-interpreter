@@ -86,86 +86,48 @@ VarDec : Type Id "=" Expr { VariableDeclaration (Variable $2 $1 Nothing) (Just $
        | Id "=" Expr { VariableAssignment (VariableUpdate $1 $3) }
 
 Expr : UnaryExpr { Expr $1 }
-     | "(" UnaryExpr ")" {Expr $2 }
 
-UnaryExpr : "+" "(" MultExpr ")" { UnaryExpr UnaryPositive $3 }
-          | "-" "(" MultExpr ")" { UnaryExpr UnaryNegative $3 }
-          | "!" "(" MultExpr ")" { UnaryExpr UnaryNot $3 }
-          | "+" MultExpr { UnaryExpr UnaryPositive $2 }
-          | "-" MultExpr { UnaryExpr UnaryNegative $2 }
-          | "!" MultExpr { UnaryExpr UnaryNot $2 }
-          | "(" MultExpr ")" { UnaryExpr UnaryPositive $2 }
-          | Value { UnaryValue $1 }
+UnaryExpr : "(" UnaryExpr ")" { $2 }
+          | "+" UnaryExpr { UnaryExpr UnaryPlus $2 }
+          | "-" UnaryExpr { UnaryExpr UnaryMinus $2 }
+          | "!" UnaryExpr { UnaryExpr UnaryNot $2 }
+          | MultExpr { UnaryRawExpr $1 }
 
-MultExpr : "(" AddExpr ")" "*" "(" AddExpr ")" { MultExpr Multiply $2 $6 }
-         | AddExpr "*" "(" AddExpr ")" { MultExpr Multiply $1 $4 }
-         | "(" AddExpr ")" "*" AddExpr { MultExpr Multiply $2 $5 }
-         | AddExpr "*" AddExpr { MultExpr Multiply $1 $3 }
+MultExpr : "(" MultExpr ")" { $2 }
+         | AddExpr "*" MultExpr { MultExpr Multiply $1 $3 }
+         | AddExpr "/" MultExpr { MultExpr Divide $1 $3 }
+         | AddExpr { MultRawExpr $1 }
 
-         | "(" AddExpr ")" "/" "(" AddExpr ")" { MultExpr Divide $2 $6 }
-         | AddExpr "/" "(" AddExpr ")" { MultExpr Divide $1 $4 }
-         | "(" AddExpr ")" "/" AddExpr { MultExpr Divide $2 $5 }
-         | AddExpr "/" AddExpr { MultExpr Divide $1 $3 }
+AddExpr : "(" AddExpr ")" { $2 }
+         | RelationExpr "+" AddExpr { AddExpr Addition $1 $3 }
+         | RelationExpr "-" AddExpr { AddExpr Substraction $1 $3 }
+         | RelationExpr { AddRawExpr $1 }
 
-         | Value { MultValue $1 }
+RelationExpr : "(" RelationExpr ")" { $2 }
+         | EqExpr ">" RelationExpr { RelationExpr Greater $1 $3 }
+         | EqExpr "<" RelationExpr { RelationExpr Less $1 $3 }
 
-AddExpr : "(" RelationExpr ")" "+" "(" RelationExpr ")" { AddExpr Addition $2 $6 }
-        | RelationExpr "+" "(" RelationExpr ")" { AddExpr Addition $1 $4 }
-        | "(" RelationExpr ")" "+" RelationExpr { AddExpr Addition $2 $5 }
-        | RelationExpr "+" RelationExpr { AddExpr Addition $1 $3 }
+         | EqExpr ">=" RelationExpr { RelationExpr GreaterOrEq $1 $3 }
+         | EqExpr "<=" RelationExpr { RelationExpr LessOrEq $1 $3 }
 
-        | "(" RelationExpr ")" "-" "(" RelationExpr ")" { AddExpr Substraction $2 $6 }
-        | RelationExpr "-" "(" RelationExpr ")" { AddExpr Substraction $1 $4 }
-        | "(" RelationExpr ")" "-" RelationExpr { AddExpr Substraction $2 $5 }
-        | RelationExpr "-" RelationExpr { AddExpr Substraction $1 $3 }
+         | EqExpr { RelationRawExpr $1 }
 
-        | Value { AddValue $1 }
+EqExpr : "(" EqExpr ")" { $2 }
+         | AndExpr "==" EqExpr { EqExpr Equality $1 $3 }
+         | AndExpr "!=" EqExpr { EqExpr Inequality $1 $3 }
+         | AndExpr { EqRawExpr $1 }
 
-RelationExpr : "(" EqExpr ")" ">" "(" EqExpr ")" { RelationExpr Greater $2 $6 }
-             | EqExpr ">" "(" EqExpr ")" { RelationExpr Greater $1 $4 }
-             | "(" EqExpr ")" ">" EqExpr { RelationExpr Greater $2 $5 }
-             | EqExpr ">" EqExpr { RelationExpr Greater $1 $3 }
+AndExpr : "(" AndExpr ")" { $2 }
+         | OrExpr "&&" AndExpr { AndExpr $1 $3 }
+         | OrExpr { AndRawExpr $1 }
 
-             | "(" EqExpr ")" "<" "(" EqExpr ")" { RelationExpr Less $2 $6 }
-             | EqExpr "<" "(" EqExpr ")" { RelationExpr Less $1 $4 }
-             | "(" EqExpr ")" "<" EqExpr { RelationExpr Less $2 $5 }
-             | EqExpr "<" EqExpr { RelationExpr Less $1 $3 }
+OrExpr : "(" OrExpr ")" { $2 }
+         | BaseExpr "||" OrExpr { OrExpr $1 $3 }
+         | BaseExpr { OrRawExpr $1 }
 
-             | "(" EqExpr ")" ">=" "(" EqExpr ")" { RelationExpr GreaterOrEq $2 $6 }
-             | EqExpr ">=" "(" EqExpr ")" { RelationExpr GreaterOrEq $1 $4 }
-             | "(" EqExpr ")" ">=" EqExpr { RelationExpr GreaterOrEq $2 $5 }
-             | EqExpr ">=" EqExpr { RelationExpr GreaterOrEq $1 $3 }
-
-             | "(" EqExpr ")" "<=" "(" EqExpr ")" { RelationExpr LessOrEq $2 $6 }
-             | EqExpr "<=" "(" EqExpr ")" { RelationExpr LessOrEq $1 $4 }
-             | "(" EqExpr ")" "<=" EqExpr { RelationExpr LessOrEq $2 $5 }
-             | EqExpr "<=" EqExpr { RelationExpr LessOrEq $1 $3 }
-
-             | Value { RelationValue $1 }
-
-EqExpr : "(" AndExpr ")" "==" "(" AndExpr ")" { EqExpr Equality $2 $6 }
-       | AndExpr "==" "(" AndExpr ")" { EqExpr Equality $1 $4 }
-       | "(" AndExpr ")" "==" AndExpr { EqExpr Equality $2 $5 }
-       | AndExpr "==" AndExpr { EqExpr Equality $1 $3 }
-
-       | "(" AndExpr ")" "!=" "(" AndExpr ")" { EqExpr Inequality $2 $6 }
-       | AndExpr "!=" "(" AndExpr ")" { EqExpr Inequality $1 $4 }
-       | "(" AndExpr ")" "!=" AndExpr { EqExpr Inequality $2 $5 }
-       | AndExpr "!=" AndExpr { EqExpr Inequality $1 $3 }
-
-       | Value { EqValue $1 }
-
-AndExpr : "(" OrExpr ")" "&&" "(" OrExpr ")" { AndExpr $2 $6 }
-        | OrExpr "&&" "(" OrExpr ")" { AndExpr $1 $4 }
-        | "(" OrExpr ")" "&&" OrExpr { AndExpr $2 $5 }
-        | OrExpr "&&" OrExpr { AndExpr $1 $3 }
-        | Value { AndValue $1 }
-
-OrExpr : "(" Value ")" "||" "(" Value ")" { OrExpr $2 $6 }
-       | Value "||" "(" Value ")" { OrExpr $1 $4 }
-       | "(" Value ")" "||" Value { OrExpr $2 $5 }
-       | Value "||" Value { OrExpr $1 $3 }
-       | Value { OrValue $1 }
+BaseExpr : "(" BaseExpr ")" { $2 }
+         | Value { ValueExpr $1 }
+         | Id { VarExpr $1 }
 
 Value : intVal { IntValue $1 }
       | floatVal { FloatValue $1 }

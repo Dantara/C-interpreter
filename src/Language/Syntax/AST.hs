@@ -17,19 +17,19 @@ data Variable = Variable {
 newtype Expr = Expr UnaryExpr deriving (Eq, Show)
 
 data UnaryExpr
-  = UnaryExpr UnaryAction MultExpr
-  | UnaryValue Value
+  = UnaryExpr UnaryAction UnaryExpr
+  | UnaryRawExpr MultExpr
   deriving (Eq, Show)
 
 data UnaryAction
-  = UnaryNegative
-  | UnaryPositive
+  = UnaryPlus
+  | UnaryMinus
   | UnaryNot
   deriving (Eq, Show)
 
 data MultExpr
-  = MultExpr MultAction AddExpr AddExpr
-  | MultValue Value
+  = MultExpr MultAction AddExpr MultExpr
+  | MultRawExpr AddExpr
   deriving (Eq, Show)
 
 data MultAction
@@ -38,8 +38,8 @@ data MultAction
   deriving (Eq, Show)
 
 data AddExpr
-  = AddExpr AddAction RelationExpr RelationExpr
-  | AddValue Value
+  = AddExpr AddAction RelationExpr AddExpr
+  | AddRawExpr RelationExpr
   deriving (Eq, Show)
 
 data AddAction
@@ -48,8 +48,8 @@ data AddAction
   deriving (Eq, Show)
 
 data RelationExpr
-  = RelationExpr RelationAction EqExpr EqExpr
-  | RelationValue Value
+  = RelationExpr RelationAction EqExpr RelationExpr
+  | RelationRawExpr EqExpr
   deriving (Eq, Show)
 
 data RelationAction
@@ -60,23 +60,28 @@ data RelationAction
   deriving (Eq, Show)
 
 data EqExpr
-  = EqExpr EqAction AndExpr AndExpr
-  | EqValue Value
+  = EqExpr EqAction AndExpr EqExpr
+  | EqRawExpr AndExpr
   deriving (Eq, Show)
 
 data EqAction
- = Equality
- | Inequality
+  = Equality
+  | Inequality
   deriving (Eq, Show)
 
 data AndExpr
-  = AndExpr OrExpr OrExpr
-  | AndValue Value
+  = AndExpr OrExpr AndExpr
+  | AndRawExpr OrExpr
   deriving (Eq, Show)
 
 data OrExpr
-  = OrExpr Value Value
-  | OrValue Value
+  = OrExpr BaseExpr OrExpr
+  | OrRawExpr BaseExpr
+  deriving (Eq, Show)
+
+data BaseExpr
+  = ValueExpr Value
+  | VarExpr Identifier
   deriving (Eq, Show)
 
 data Type
