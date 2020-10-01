@@ -4,6 +4,7 @@ module Language.Parser where
 
 import Language.Syntax.Token
 import Language.Syntax.AST
+import Language.Utils
 
 }
 
@@ -183,7 +184,7 @@ parseError ts = Left
   , show c
   , "\n"
   , "Token: "
-  , show tc
+  , tokenClassToString tc
             ]
   where
     (Token (l, c) tc) = head ts
