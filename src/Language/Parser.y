@@ -146,7 +146,7 @@ LDecs : {- empty -} { [] }
       | LDec LDecs { $1 : $2 }
 
 LDec : VarDec ";" { LocalVariableDeclaration $1 }
-     | LoopDec { LoopDeclation $1 }
+     | LoopDec { LoopDeclaration $1 }
      | IfDec { IfDeclaration $1 }
      | Expr ";" { LocalExpr $1 }
      | Return ";" { ReturnCall $1 }
