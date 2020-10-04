@@ -1,7 +1,18 @@
+-- {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE FunctionalDependencies #-}
+{-# LANGUAGE DeriveFunctor #-}
+
 module Language.Syntax.AST where
 
+import           Control.Monad.Trans.Except
+import           Control.Monad.Trans.State.Lazy
+import           Data.Map.Strict                (Map)
+import qualified Data.Map.Strict                as Map
 import           Language.Syntax.Internals
-import           Text.Read
+import           Text.Read hiding (lift)
+import Control.Monad.Trans.Class
+import Control.Monad.IO.Class
+import Control.Monad
 
 newtype AST = AST [GlobalDeclaration] deriving (Eq, Show)
 
@@ -306,7 +317,7 @@ instance Castable Value where
   castToInt (FloatValue x) = IntValue $ round x
   castToInt (StringValue s) = IntValue $ mbToInt $ readMaybe s
     where
-      mbToInt Nothing  = 0
+      mbToInt Nothing  = length s
       mbToInt (Just y) = y
   castToInt (BoolValue True) = IntValue 1
   castToInt (BoolValue False) = IntValue 0
@@ -315,7 +326,7 @@ instance Castable Value where
   castToFloat (FloatValue x) = FloatValue x
   castToFloat (StringValue s) = FloatValue $ mbToInt $ readMaybe s
     where
-      mbToInt Nothing  = 0
+      mbToInt Nothing  = fromIntegral $ length s
       mbToInt (Just y) = y
   castToFloat (BoolValue True)  = FloatValue 1
   castToFloat (BoolValue False) = FloatValue 0
@@ -324,7 +335,7 @@ instance Castable Value where
   castToString (FloatValue x)    = StringValue $ show x
   castToString (StringValue s)   = StringValue s
   castToString (BoolValue True)  = StringValue "1"
-  castToString (BoolValue False) = StringValue "0"
+  castToString (BoolValue False) = StringValue ""
 
   castToBool (IntValue x)
     | x > 0 = BoolValue True
@@ -336,3 +347,181 @@ instance Castable Value where
     | s == "" = BoolValue False
     | otherwise = BoolValue True
   castToBool (BoolValue x) = BoolValue x
+
+data AppState = AppState {
+    funcs      :: Map Identifier Function
+  , globalVars :: Map Identifier Variable
+  , localVars  :: Map Identifier Variable
+                         }
+
+newtype AppM a = AppM {
+  runApp :: StateT AppState IO (Either String a)
+  } deriving (Functor)
+
+class Interpretable a b | a -> b where
+  interpret :: a -> AppM b
+ 
+instance Interpretable Expr Value where
+  interpret (Expr e) = interpret e
+
+-- Figure out how to use bind
+instance Interpretable UnaryExpr Value where
+  interpret (UnaryExpr UnaryPlus e) = interpret e
+  interpret (UnaryExpr UnaryMinus e) = AppM
+    $ liftM (\x -> x >>= handle . castToFloat)
+    $ runApp
+    $ interpret e
+    where
+      handle (FloatValue x) = Right $ FloatValue $ (-1) * x
+      handle x = Left $ "Type casting error at: " <> toSourceCode x
+
+  interpret (UnaryExpr UnaryNot e) = AppM
+    $ liftM (\x -> x >>= handle . castToBool)
+    $ runApp
+    $ interpret e
+    where
+      handle (BoolValue x) = Right $ BoolValue $ not x
+      handle x = Left $ "Type casting error at: " <> toSourceCode x
+
+  interpret (UnaryRawExpr e) = interpret e
+ 
+
+instance Interpretable MultExpr Value where
+  interpret e@(MultExpr Multiply l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ FloatValue $ x * y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret e@(MultExpr Divide l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ FloatValue $ x / y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret (MultRawExpr e) = interpret e
+
+
+instance Interpretable AddExpr Value where
+  interpret e@(AddExpr Addition l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ FloatValue $ x + y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret e@(AddExpr Substraction l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ FloatValue $ x - y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret (AddRawExpr e) = interpret e
+
+
+instance Interpretable RelationExpr Value where
+  interpret e@(RelationExpr Greater l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ BoolValue $ x > y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret e@(RelationExpr Less l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ BoolValue $ x < y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret e@(RelationExpr GreaterOrEq l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ BoolValue $ x >= y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret e@(RelationExpr LessOrEq l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToFloat <$> interpret l)
+    (runApp $ castToFloat <$> interpret r)
+    where
+      handle (FloatValue x) (FloatValue y) = Right $ BoolValue $ x <= y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret (RelationRawExpr e) = interpret e
+
+
+instance Interpretable EqExpr Value where
+  interpret (EqExpr Equality l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; pure $ handle x' y'})
+    (runApp $ interpret l)
+    (runApp $ interpret r)
+    where
+      handle (FloatValue x) y = BoolValue $ x == toFloat y
+      handle (IntValue x) y = BoolValue $ x == toInt y
+      handle (StringValue x) y = BoolValue $ x == toString y
+      handle (BoolValue x) y = BoolValue $ x == toBool y
+      toFloat y = (\(FloatValue x) -> x) $ castToFloat y
+      toInt y = (\(IntValue x) -> x) $ castToInt y
+      toString y = (\(StringValue x) -> x) $ castToString y
+      toBool y = (\(BoolValue x) -> x) $ castToBool y
+
+  interpret (EqExpr Inequality l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; pure $ handle x' y'})
+    (runApp $ interpret l)
+    (runApp $ interpret r)
+    where
+      handle (FloatValue x) y = BoolValue $ x /= toFloat y
+      handle (IntValue x) y = BoolValue $ x /= toInt y
+      handle (StringValue x) y = BoolValue $ x /= toString y
+      handle (BoolValue x) y = BoolValue $ x /= toBool y
+      toFloat y = (\(FloatValue x) -> x) $ castToFloat y
+      toInt y = (\(IntValue x) -> x) $ castToInt y
+      toString y = (\(StringValue x) -> x) $ castToString y
+      toBool y = (\(BoolValue x) -> x) $ castToBool y
+
+  interpret (EqRawExpr e) = interpret e
+
+ 
+
+instance Interpretable AndExpr Value where
+  interpret e@(AndExpr l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToBool <$> interpret l)
+    (runApp $ castToBool <$> interpret r)
+    where
+      handle (BoolValue x) (BoolValue y) = Right $ BoolValue $ x && y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret (AndRawExpr e) = interpret e
+
+
+instance Interpretable OrExpr Value where
+  interpret e@(OrExpr l r) = AppM $
+    liftM2 (\x y -> do {x' <- x; y' <- y; handle x' y'})
+    (runApp $ castToBool <$> interpret l)
+    (runApp $ castToBool <$> interpret r)
+    where
+      handle (BoolValue x) (BoolValue y) = Right $ BoolValue $ x || y
+      handle _ _ = Left $ "Type casting error at: " <> toSourceCode e
+
+  interpret (OrRawExpr e) = interpret e
+
+
+instance Interpretable BaseExpr Value where
+  interpret (ValueExpr v) = interpret v
+
+ 
+instance Interpretable Value Value where
+  interpret v = AppM $ return $ Right v

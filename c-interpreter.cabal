@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: b7286f080885f48d568d697ce65e59d34f59cb183337e5aec5233272bce0d343
+-- hash: 46651d295de373ae49922e6b99a21c2e59df646b11bdb0939f94e8342dacf28c
 
 name:           c-interpreter
 version:        0.1.0.0
@@ -42,6 +42,8 @@ library
   build-depends:
       array
     , base >=4.7 && <5
+    , containers
+    , transformers
   default-language: Haskell2010
 
 executable c-interpreter-exe
@@ -58,6 +60,8 @@ executable c-interpreter-exe
       array
     , base >=4.7 && <5
     , c-interpreter
+    , containers
+    , transformers
   default-language: Haskell2010
 
 test-suite c-interpreter-test
@@ -75,4 +79,6 @@ test-suite c-interpreter-test
       array
     , base >=4.7 && <5
     , c-interpreter
+    , containers
+    , transformers
   default-language: Haskell2010
