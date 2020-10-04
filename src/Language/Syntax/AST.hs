@@ -1,6 +1,7 @@
 module Language.Syntax.AST where
 
 import           Language.Syntax.Internals
+import           Text.Read
 
 newtype AST = AST [GlobalDeclaration] deriving (Eq, Show)
 
@@ -297,3 +298,41 @@ printLocalDecs = foldMap (\d -> "   " <> toSourceCode d <> "\n")
 mbToStr :: ToSourceCode a => Maybe a -> String
 mbToStr Nothing  = ""
 mbToStr (Just x) = toSourceCode x
+
+
+
+instance Castable Value where
+  castToInt (IntValue x)   = IntValue x
+  castToInt (FloatValue x) = IntValue $ round x
+  castToInt (StringValue s) = IntValue $ mbToInt $ readMaybe s
+    where
+      mbToInt Nothing  = 0
+      mbToInt (Just y) = y
+  castToInt (BoolValue True) = IntValue 1
+  castToInt (BoolValue False) = IntValue 0
+
+  castToFloat (IntValue x)   = IntValue $ fromIntegral x
+  castToFloat (FloatValue x) = FloatValue x
+  castToFloat (StringValue s) = FloatValue $ mbToInt $ readMaybe s
+    where
+      mbToInt Nothing  = 0
+      mbToInt (Just y) = y
+  castToFloat (BoolValue True)  = FloatValue 1
+  castToFloat (BoolValue False) = FloatValue 0
+
+  castToString (IntValue x)      = StringValue $ show x
+  castToString (FloatValue x)    = StringValue $ show x
+  castToString (StringValue s)   = StringValue s
+  castToString (BoolValue True)  = StringValue "1"
+  castToString (BoolValue False) = StringValue "0"
+
+  castToBool (IntValue x)
+    | x > 0 = BoolValue True
+    | otherwise = BoolValue False
+  castToBool (FloatValue x)
+    | x > 0 = BoolValue True
+    | otherwise = BoolValue False
+  castToBool (StringValue s)
+    | s == "" = BoolValue False
+    | otherwise = BoolValue True
+  castToBool (BoolValue x) = BoolValue x
