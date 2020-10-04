@@ -9,10 +9,11 @@ import           Control.Monad.Trans.State.Lazy
 import           Data.Map.Strict                (Map)
 import qualified Data.Map.Strict                as Map
 import           Language.Syntax.Internals
-import           Text.Read hiding (lift)
+import           Text.Read (readMaybe)
 import Control.Monad.Trans.Class
 import Control.Monad.IO.Class
 import Control.Monad
+import Control.Applicative
 
 newtype AST = AST [GlobalDeclaration] deriving (Eq, Show)
 
@@ -113,7 +114,7 @@ data Value
   | BoolValue Bool
   deriving (Eq, Show)
 
-newtype Identifier = Identifier String deriving (Eq, Show)
+newtype Identifier = Identifier String deriving (Eq, Show, Ord)
 
 data Function = Function {
     funcName :: Identifier
@@ -358,6 +359,10 @@ newtype AppM a = AppM {
   runApp :: StateT AppState IO (Either String a)
   } deriving (Functor)
 
+-- instance Monad AppM where
+--   return x = AppM $ Right x
+--   AppM x >>= f = f >>= x
+
 class Interpretable a b | a -> b where
   interpret :: a -> AppM b
  
@@ -368,7 +373,7 @@ instance Interpretable Expr Value where
 instance Interpretable UnaryExpr Value where
   interpret (UnaryExpr UnaryPlus e) = interpret e
   interpret (UnaryExpr UnaryMinus e) = AppM
-    $ liftM (\x -> x >>= handle . castToFloat)
+    $ fmap (\x -> x >>= handle . castToFloat)
     $ runApp
     $ interpret e
     where
@@ -376,7 +381,7 @@ instance Interpretable UnaryExpr Value where
       handle x = Left $ "Type casting error at: " <> toSourceCode x
 
   interpret (UnaryExpr UnaryNot e) = AppM
-    $ liftM (\x -> x >>= handle . castToBool)
+    $ fmap (\x -> x >>= handle . castToBool)
     $ runApp
     $ interpret e
     where
@@ -464,7 +469,7 @@ instance Interpretable RelationExpr Value where
 
 instance Interpretable EqExpr Value where
   interpret (EqExpr Equality l r) = AppM $
-    liftM2 (\x y -> do {x' <- x; y' <- y; pure $ handle x' y'})
+    liftM2 (\x y -> do {x' <- x; handle x' <$> y})
     (runApp $ interpret l)
     (runApp $ interpret r)
     where
@@ -478,7 +483,7 @@ instance Interpretable EqExpr Value where
       toBool y = (\(BoolValue x) -> x) $ castToBool y
 
   interpret (EqExpr Inequality l r) = AppM $
-    liftM2 (\x y -> do {x' <- x; y' <- y; pure $ handle x' y'})
+    liftM2 (\x y -> do {x' <- x; handle x' <$> y})
     (runApp $ interpret l)
     (runApp $ interpret r)
     where
@@ -521,7 +526,27 @@ instance Interpretable OrExpr Value where
 
 instance Interpretable BaseExpr Value where
   interpret (ValueExpr v) = interpret v
+  interpret (VarExpr id') = AppM $ do
+    appState <- get
+    gvs <- return $ globalVars appState
+    lvs <- return $ localVars appState
+    case (Map.lookup id' lvs) <|> (Map.lookup id' gvs) of
+      Nothing ->
+        pure $ Left "Unknown"
+      Just v ->
+        runApp $ interpret v
 
+
+instance Interpretable Variable Value where
+  interpret (Variable _ TypeInt (Just v)) = castToInt <$> interpret v
+  interpret (Variable _ TypeFloat (Just v)) = castToFloat <$> interpret v
+  interpret (Variable _ TypeString (Just v)) = castToString <$> interpret v
+  interpret (Variable _ TypeBool (Just v)) = castToBool <$> interpret v
+  interpret v@(Variable _ _ Nothing) = AppM
+    $ return
+    $ Left
+    $ "Variable is has no value: \n"
+    <> toSourceCode v
  
 instance Interpretable Value Value where
   interpret v = AppM $ return $ Right v
