@@ -361,7 +361,8 @@ newtype AppM a = AppM {
 
 -- instance Monad AppM where
 --   return x = AppM $ Right x
---   AppM x >>= f = f >>= x
+--   AppM (StateT (Right x)) >>= f = f x
+--   AppM (Left x) >>= _ = return x
 
 class Interpretable a b | a -> b where
   interpret :: a -> AppM b
@@ -526,15 +527,46 @@ instance Interpretable OrExpr Value where
 
 instance Interpretable BaseExpr Value where
   interpret (ValueExpr v) = interpret v
+
   interpret (VarExpr id') = AppM $ do
     appState <- get
-    gvs <- return $ globalVars appState
-    lvs <- return $ localVars appState
+    let gvs = globalVars appState
+    let lvs = localVars appState
     case (Map.lookup id' lvs) <|> (Map.lookup id' gvs) of
       Nothing ->
-        pure $ Left "Unknown"
+        pure $ Left $ "Unknown variable: " <> toSourceCode id'
       Just v ->
         runApp $ interpret v
+
+  -- interpret (FunctionCall id' params) = AppM $ do
+  --   appState <- get
+  --   let fs = funcs appState
+  --   case Map.lookup id' fs of
+  --     Nothing ->
+  --       pure $ Left $ "Unknown function: " <> toSourceCode id'
+  --     Just f ->
+  --       if length (funcArgs f) /= length params then
+  --                pure
+  --                $ Left
+  --                $ "Wrong number of arguments for the following function: "
+  --                <> toSourceCode f
+  --              else do
+  --                let (AppM vars) = mapM (uncurry plugExprToVar)
+  --                                  $ zip params (funcArgs f)
+  --                let vs = sequence vars
+  --                case sequence vars of
+  --                  Left x -> pure $ Left x
+  --                  Right x -> do
+  --                    y <- x
+  --                    runApp $ interpret (f {funcArgs = y})
+
+
+plugExprToVar :: Expr -> Variable -> AppM Variable
+plugExprToVar expr var = AppM $ do
+  val <- runApp $ interpret expr
+  pure $ do
+    x <- val
+    Right $ var {varValue = Just x}
 
 
 instance Interpretable Variable Value where
