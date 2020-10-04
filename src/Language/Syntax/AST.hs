@@ -538,27 +538,21 @@ instance Interpretable BaseExpr Value where
       Just v ->
          interpret v
 
-  -- interpret (FunctionCall id' params) = AppM $ do
-  --   appState <- get
-  --   let fs = funcs appState
-  --   case Map.lookup id' fs of
-  --     Nothing ->
-  --       pure $ Left $ "Unknown function: " <> toSourceCode id'
-  --     Just f ->
-  --       if length (funcArgs f) /= length params then
-  --                pure
-  --                $ Left
-  --                $ "Wrong number of arguments for the following function: "
-  --                <> toSourceCode f
-  --              else do
-  --                let (AppM vars) = mapM (uncurry plugExprToVar)
-  --                                  $ zip params (funcArgs f)
-  --                let vs = sequence vars
-  --                case sequence vars of
-  --                  Left x -> pure $ Left x
-  --                  Right x -> do
-  --                    y <- x
-  --                    runApp $ interpret (f {funcArgs = y})
+  interpret (FunctionCall id' params) = do
+    appState <- get
+    let fs = funcs appState
+    case Map.lookup id' fs of
+      Nothing ->
+        throwError $ "Unknown function: " <> toSourceCode id'
+      Just f ->
+        if length (funcArgs f) /= length params then
+          throwError
+          $ "Wrong number of arguments for the following function: "
+          <> toSourceCode f
+        else do
+          vars <- mapM (uncurry plugExprToVar)
+                            $ zip params (funcArgs f)
+          interpret (f {funcArgs = vars})
 
 
 plugExprToVar :: Expr -> Variable -> AppM Variable
