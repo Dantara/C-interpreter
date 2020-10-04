@@ -2,11 +2,10 @@
 {-# LANGUAGE DeriveFunctor #-}
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
 
 module Language.Syntax.AST where
 
--- import           Control.Monad.Trans.Except
--- import           Control.Monad.Trans.State.Lazy
 import           Data.Map.Strict                (Map)
 import qualified Data.Map.Strict                as Map
 import           Language.Syntax.Internals
@@ -356,6 +355,7 @@ data AppState = AppState {
     funcs      :: Map Identifier Function
   , globalVars :: Map Identifier Variable
   , localVars  :: Map Identifier Variable
+  , currentFunc :: Function
                          }
 
 newtype AppM a = AppM {
@@ -551,14 +551,45 @@ instance Interpretable BaseExpr Value where
           <> toSourceCode f
         else do
           vars <- mapM (uncurry plugExprToVar)
-                            $ zip params (funcArgs f)
+                  $ zip params (funcArgs f)
           interpret (f {funcArgs = vars})
-
 
 plugExprToVar :: Expr -> Variable -> AppM Variable
 plugExprToVar expr var = do
   val <- interpret expr
   pure $ var {varValue = Just val}
+
+
+instance Interpretable Function Value where
+  interpret f@(Function _ _ args ds) = do
+    baseF <- currentFunc <$> get
+    modify (\x -> x { currentFunc = f, localVars = varsToMap args })
+    r <- interpret ds
+    modify (\x -> x { currentFunc = baseF, localVars = Map.empty })
+    pure r
+    where
+      varsToMap :: [Variable] -> Map Identifier Variable
+      varsToMap vars = Map.fromList $ zip (varName <$> vars) vars
+
+
+instance Interpretable [LocalDeclaration] Value where
+  interpret [] = do
+    id' <- funcName . currentFunc <$> get
+    throwError $ "Function " <> toSourceCode id' <> " has no body."
+  interpret [r@(ReturnCall _)] = interpret r
+  interpret [_] = do
+    id' <- funcName . currentFunc <$> get
+    throwError $ "Function " <> toSourceCode id' <> " has no return statement."
+  interpret (r@(ReturnCall _):_) = interpret r
+  interpret (d:ds) = interpret d >> interpret ds
+
+
+instance Interpretable LocalDeclaration Value where
+  interpret (ReturnCall r) = interpret r
+
+
+instance Interpretable Return Value where
+  interpret (Return e) = interpret e
 
 
 instance Interpretable Variable Value where
