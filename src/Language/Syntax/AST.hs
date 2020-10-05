@@ -373,7 +373,40 @@ newtype AppM a = AppM {
 
 class Interpretable a b | a -> b where
   interpret :: a -> AppM b
- 
+
+
+instance Interpretable AST () where
+  interpret (AST ds) = do
+    mapM_ interpret ds
+    fs <- funcs <$> get
+    case Map.lookup (Identifier "main") fs of
+      Just f ->
+        interpret f >> pure ()
+      Nothing ->
+        throwError "main function is not defined."
+
+
+instance Interpretable GlobalDeclaration () where
+  interpret (FunctionDeclaration f) = do
+    let id' = funcName f
+    fs <- funcs <$> get
+    case (Map.member id' fs, Map.member id' buildInFunctions) of
+      (False, False) -> do
+        let fs' =  Map.insert id' f fs
+        modify (\x -> x { funcs = fs' })
+      (True, _) ->
+        throwError
+        $ "Function with name " <> toSourceCode id' <> " was already defined."
+      (False, _) ->
+        throwError
+        $ "Function name " <> toSourceCode id' <> " is reserved."
+
+  interpret (GlobalVariableDeclaration v) =
+    modify (\x -> x { scope = Global }) >> interpret v
+
+  interpret (GlobalExpr _) = pure ()
+
+
 instance Interpretable Expr Value where
   interpret (Expr e) = interpret e
 
