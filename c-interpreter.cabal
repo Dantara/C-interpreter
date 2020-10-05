@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 598eb920c71f3af3a4480d5378a19f4d50d023d1a1e20ce4e499298202372349
+-- hash: 7b6e2467c857e9d911cfae3a8200b86dc753c8846348aacc4cfe4ed0755b2b10
 
 name:           c-interpreter
 version:        0.1.0.0
@@ -34,7 +34,6 @@ library
       Language.Syntax.AST
       Language.Syntax.Internals
       Language.Syntax.Token
-      Lib
   other-modules:
       Paths_c_interpreter
   hs-source-dirs:
@@ -44,6 +43,7 @@ library
     , base >=4.7 && <5
     , containers
     , mtl
+    , optparse-applicative
     , transformers
   default-language: Haskell2010
 
@@ -63,6 +63,7 @@ executable c-interpreter-exe
     , c-interpreter
     , containers
     , mtl
+    , optparse-applicative
     , transformers
   default-language: Haskell2010
 
@@ -83,5 +84,6 @@ test-suite c-interpreter-test
     , c-interpreter
     , containers
     , mtl
+    , optparse-applicative
     , transformers
   default-language: Haskell2010

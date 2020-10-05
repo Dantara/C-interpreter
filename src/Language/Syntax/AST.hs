@@ -177,9 +177,9 @@ instance ToSourceCode GlobalDeclaration where
 
 instance ToSourceCode Function where
   toSourceCode (Function id' type' args body) = mconcat [
-      toSourceCode id'
+      toSourceCode type'
     , " "
-    , toSourceCode type'
+    , toSourceCode id'
     , "("
     , printArgs args
     , ") {\n"
@@ -210,7 +210,7 @@ instance ToSourceCode VariableUpdate where
   toSourceCode (VariableUpdate id' e) = toSourceCode id' <> " = " <> toSourceCode e
 
 instance ToSourceCode Variable where
-  toSourceCode (Variable id' _ _) = toSourceCode id'
+  toSourceCode (Variable id' t' _) = toSourceCode t' <> " " <> toSourceCode id'
 
 instance ToSourceCode Type where
   toSourceCode TypeInt    = "int"
@@ -766,8 +766,8 @@ instance Interpretable Variable Value where
   interpret (Variable _ TypeFloat (Just v)) = castToFloat <$> interpret v
   interpret (Variable _ TypeString (Just v)) = castToString <$> interpret v
   interpret (Variable _ TypeBool (Just v)) = castToBool <$> interpret v
-  interpret v@(Variable _ _ Nothing) = throwError
-    $ "\nERROR OCCURED: Variable " <> toSourceCode v <> " has no value."
+  interpret (Variable id' _ Nothing) = throwError
+    $ "\nERROR OCCURED: Variable " <> toSourceCode id' <> " has no value."
 
 instance Interpretable Value Value where
   interpret v = pure v
