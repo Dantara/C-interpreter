@@ -379,7 +379,7 @@ class Interpretable a b | a -> b where
 instance Interpretable Expr Value where
   interpret (Expr e) = interpret e
 
-
+ 
 instance Interpretable UnaryExpr Value where
   interpret (UnaryExpr UnaryPlus e) = interpret e
   interpret (UnaryExpr UnaryMinus e) =
@@ -581,15 +581,8 @@ instance Interpretable Function Value where
       varsToMap vars = Map.fromList $ zip (varName <$> vars) vars
 
 
--- Remove return checking
 instance Interpretable [LocalDeclaration] (Maybe Value) where
-  interpret [] = do
-    id' <- funcName . currentFunc <$> get
-    throwError $ "Function " <> toSourceCode id' <> " has no body."
-  interpret [r@(ReturnCall _)] = interpret r
-  interpret [_] = do
-    id' <- funcName . currentFunc <$> get
-    throwError $ "Function " <> toSourceCode id' <> " has no return statement."
+  interpret [] = pure Nothing
   interpret (r@(ReturnCall _):_) = interpret r
   interpret (d:ds) = interpret d >> interpret ds
 
@@ -650,20 +643,28 @@ instance Interpretable If (Maybe Value) where
   interpret (If Nothing ib _) = do
     interpret ib
 
--- Take care on returning
+
 instance Interpretable Loop (Maybe Value) where
   interpret (WhileLoop l) = interpret l
   interpret (ForLoop l) = interpret l
 
 
 instance Interpretable While (Maybe Value) where
-  interpret l@(While Nothing b) = do
+  interpret l@(While Nothing b) =
     interpret b >> interpret l
 
   interpret l@(While (Just cond) b) = do
-    v' <- interpret cond
-    let (BoolValue cond') = castToBool v'
-    if cond' then interpret b >> interpret l else pure Nothing
+    v <- interpret cond
+    b' <- interpret b
+    case (castToBool v, b') of
+      (BoolValue False, _) ->
+        pure Nothing
+      (BoolValue True, Nothing) ->
+        interpret l
+      (BoolValue True, r) ->
+        pure r
+      (_, _) ->
+        throwError $ "Type cast error of " <> toSourceCode cond
 
 
 instance Interpretable For (Maybe Value) where
@@ -673,8 +674,19 @@ instance Interpretable For (Maybe Value) where
       evalV Nothing = pure Nothing
       evalC (Just c') = castToBool <$> interpret c'
       evalC Nothing = pure $ BoolValue True
-      loop = evalC c >>= \(BoolValue cond) ->
-        if cond then interpret b >> evalV vu else pure Nothing
+      loop = do
+        cond <- evalC c
+        b' <- interpret b
+        case (cond, b') of
+          (BoolValue False, _) ->
+            pure Nothing
+          (BoolValue True, Nothing) ->
+            evalV vu >> loop
+          (BoolValue True, r) ->
+            pure r
+          (_, _) ->
+            throwError $ "Type cast error of " <> toSourceCode cond
+
 
 instance Interpretable VariableUpdate () where
   interpret (VariableUpdate id' e) = do
