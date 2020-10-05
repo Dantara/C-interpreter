@@ -596,6 +596,7 @@ instance Interpretable LocalDeclaration Value where
     modify (\x -> x { scope = Local })
     interpret v
   interpret (IfDeclaration e) = interpret e
+  interpret (LoopDeclaration l) = interpret l
 
 
 instance Interpretable Return Value where
@@ -643,9 +644,24 @@ instance Interpretable If Value where
     v' <- interpret cond
     let (BoolValue cond') = castToBool v'
     if cond' then interpret ib else interpret eb
-
+ 
   interpret (If Nothing ib _) = do
     interpret ib
+
+
+instance Interpretable Loop Value where
+  interpret (WhileLoop l) = interpret l
+
+
+instance Interpretable While Value where
+  interpret l@(While Nothing b) = do
+    interpret b >> interpret l
+
+  interpret l@(While (Just cond) b) = do
+    v' <- interpret cond
+    let (BoolValue cond') = castToBool v'
+    if cond' then interpret b >> interpret l else pure $ IntValue 0
+
 
 
 instance Interpretable VariableUpdate Value where
