@@ -10,9 +10,6 @@ import           Data.Map.Strict                (Map)
 import qualified Data.Map.Strict                as Map
 import           Language.Syntax.Internals
 import           Text.Read (readMaybe)
-import Control.Monad.Trans.Class
-import Control.Monad.IO.Class
-import Control.Monad
 import Control.Applicative
 import Control.Monad.Except
 import Control.Monad.State.Lazy
@@ -370,6 +367,7 @@ newtype AppM a = AppM {
              , Monad
              , MonadError String
              , MonadState AppState
+             , MonadIO
              )
 
 
@@ -529,7 +527,19 @@ instance Interpretable OrExpr Value where
 
   interpret (OrRawExpr e) = interpret e
 
- 
+
+data SpecialFunction
+  = PrintF
+  | ScanF
+  deriving (Eq, Show)
+
+buildInFunctions :: Map Identifier SpecialFunction
+buildInFunctions = Map.fromList [
+    (Identifier "printf", PrintF)
+  , (Identifier "scanf", ScanF)
+  ]
+
+
 instance Interpretable BaseExpr Value where
   interpret (ValueExpr v) = interpret v
 
@@ -546,10 +556,21 @@ instance Interpretable BaseExpr Value where
   interpret (FunctionCall id' params) = do
     appState <- get
     let fs = funcs appState
-    case Map.lookup id' fs of
-      Nothing ->
+    case (Map.lookup id' buildInFunctions, Map.lookup id' fs) of
+      (Just PrintF, _) -> do
+        str <- mconcat
+          <$> mapM ((fmap ((\(StringValue s) -> s) . castToString)) . interpret)
+          params
+        liftIO $ putStrLn str
+        pure $ IntValue $ length str
+
+      (Just ScanF, _) ->
+        liftIO $ StringValue <$> getLine
+
+      (Nothing, Nothing) ->
         throwError $ "Unknown function: " <> toSourceCode id'
-      Just f ->
+       
+      (Nothing, Just f) ->
         if length (funcArgs f) /= length params then
           throwError
           $ "Wrong number of arguments for the following function: "
@@ -643,7 +664,7 @@ instance Interpretable If (Maybe Value) where
   interpret (If Nothing ib _) = do
     interpret ib
 
-
+ 
 instance Interpretable Loop (Maybe Value) where
   interpret (WhileLoop l) = interpret l
   interpret (ForLoop l) = interpret l
