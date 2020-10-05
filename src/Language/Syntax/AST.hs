@@ -356,7 +356,7 @@ data AppState = AppState {
     funcs      :: Map Identifier Function
   , globalVars :: Map Identifier Variable
   , localVars  :: Map Identifier Variable
-  , currentFunc :: Function
+  , currentFunc :: Maybe Function
   , scope :: Scope
                          }
 
@@ -620,16 +620,16 @@ plugExprToVar expr var = do
 
 
 instance Interpretable Function Value where
-  interpret f@(Function _ _ args ds) = do
+  interpret f@(Function id' _ args ds) = do
     baseF <- currentFunc <$> get
-    modify (\x -> x { currentFunc = f, localVars = varsToMap args })
+    modify (\x -> x { currentFunc = Just f, localVars = varsToMap args })
     r <- interpret ds
     modify (\x -> x { currentFunc = baseF, localVars = Map.empty })
     case r of
       Just v ->
         pure v
       Nothing ->
-        throwError $ "Function " <> toSourceCode f <> " has no return statement."
+        throwError $ "Function " <> toSourceCode id' <> " has no return statement."
     where
       varsToMap :: [Variable] -> Map Identifier Variable
       varsToMap vars = Map.fromList $ zip (varName <$> vars) vars
