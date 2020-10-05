@@ -14,6 +14,7 @@ import Control.Applicative
 import Control.Monad.Except
 import Control.Monad.State.Lazy
 
+-- Abstract syntax tree a.k.a eDSL
 newtype AST = AST [GlobalDeclaration] deriving (Eq, Show)
 
 data GlobalDeclaration
@@ -167,6 +168,10 @@ data While = While {
                    } deriving (Eq, Show)
 
 
+
+
+
+-- toSourceCode transforms ast to pretty-printed string
 instance ToSourceCode AST where
   toSourceCode (AST gds) = foldMap (\gd -> toSourceCode gd <> "\n\n") gds
 
@@ -311,6 +316,9 @@ mbToStr (Just x) = toSourceCode x
 
 
 
+
+
+-- Cast types
 instance Castable Value where
   castToInt (IntValue x)   = IntValue x
   castToInt (FloatValue x) = IntValue $ round x
@@ -347,6 +355,12 @@ instance Castable Value where
     | otherwise = BoolValue True
   castToBool (BoolValue x) = BoolValue x
 
+
+
+
+
+
+-- Interpreting ast
 data Scope
   = Local
   | Global
