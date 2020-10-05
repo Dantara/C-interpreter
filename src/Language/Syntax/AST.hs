@@ -576,7 +576,7 @@ instance Interpretable Function Value where
       varsToMap :: [Variable] -> Map Identifier Variable
       varsToMap vars = Map.fromList $ zip (varName <$> vars) vars
 
-
+-- Fix for If and Loops
 instance Interpretable [LocalDeclaration] Value where
   interpret [] = do
     id' <- funcName . currentFunc <$> get
@@ -595,10 +595,12 @@ instance Interpretable LocalDeclaration Value where
   interpret (LocalVariableDeclaration v) = do
     modify (\x -> x { scope = Local })
     interpret v
+  interpret (IfDeclaration e) = interpret e
 
 
 instance Interpretable Return Value where
   interpret (Return e) = interpret e
+
 
 instance Interpretable VariableDeclaration Value where
   interpret (VariableDeclaration var Nothing) = do
@@ -634,6 +636,16 @@ instance Interpretable VariableDeclaration Value where
         interpret var'
 
   interpret (VariableAssignment v) = interpret v
+
+
+instance Interpretable If Value where
+  interpret (If (Just cond) ib eb) = do
+    v' <- interpret cond
+    let (BoolValue cond') = castToBool v'
+    if cond' then interpret ib else interpret eb
+
+  interpret (If Nothing ib _) = do
+    interpret ib
 
 
 instance Interpretable VariableUpdate Value where
