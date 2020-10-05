@@ -11,7 +11,7 @@ import Language.Syntax.Token
 $digit = 0-9
 $letter = [a-zA-Z]
 
-@string = \" [$digit $letter \_ \  \']* \"
+@string = \" [^\"]* \"
 @float = $digit+ [ \. ] $digit*
 @int = $digit+
 $eol = [\n]
@@ -40,10 +40,10 @@ tokens :-
   \{ { tok TokenOpenCurlyBracket }
   \} { tok TokenCloseCurlyBracket }
 
-  [\+] { tok TokenPlus }
-  [\-] { tok TokenMinus }
-  [\*] { tok TokenMultiply }
-  [\/] { tok TokenDivide }
+  \+ { tok TokenPlus }
+  \- { tok TokenMinus }
+  \* { tok TokenMultiply }
+  \/ { tok TokenDivide }
 
   "&&" { tok TokenAnd }
   "||" { tok TokenOr }
