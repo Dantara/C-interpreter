@@ -379,7 +379,7 @@ class Interpretable a b | a -> b where
 instance Interpretable Expr Value where
   interpret (Expr e) = interpret e
 
--- Figure out how to use bind
+
 instance Interpretable UnaryExpr Value where
   interpret (UnaryExpr UnaryPlus e) = interpret e
   interpret (UnaryExpr UnaryMinus e) =
@@ -571,13 +571,18 @@ instance Interpretable Function Value where
     modify (\x -> x { currentFunc = f, localVars = varsToMap args })
     r <- interpret ds
     modify (\x -> x { currentFunc = baseF, localVars = Map.empty })
-    pure r
+    case r of
+      Just v ->
+        pure v
+      Nothing ->
+        throwError $ "Function " <> toSourceCode f <> " has no return statement."
     where
       varsToMap :: [Variable] -> Map Identifier Variable
       varsToMap vars = Map.fromList $ zip (varName <$> vars) vars
 
--- Fix for If and Loops
-instance Interpretable [LocalDeclaration] Value where
+
+-- Remove return checking
+instance Interpretable [LocalDeclaration] (Maybe Value) where
   interpret [] = do
     id' <- funcName . currentFunc <$> get
     throwError $ "Function " <> toSourceCode id' <> " has no body."
@@ -589,12 +594,13 @@ instance Interpretable [LocalDeclaration] Value where
   interpret (d:ds) = interpret d >> interpret ds
 
 
-instance Interpretable LocalDeclaration Value where
-  interpret (ReturnCall r) = interpret r
-  interpret (LocalExpr e) = interpret e
+instance Interpretable LocalDeclaration (Maybe Value) where
+  interpret (ReturnCall r) = Just <$> interpret r
+  interpret (LocalExpr e) = interpret e >> pure Nothing
   interpret (LocalVariableDeclaration v) = do
     modify (\x -> x { scope = Local })
     interpret v
+    pure Nothing
   interpret (IfDeclaration e) = interpret e
   interpret (LoopDeclaration l) = interpret l
 
@@ -603,16 +609,14 @@ instance Interpretable Return Value where
   interpret (Return e) = interpret e
 
 
-instance Interpretable VariableDeclaration Value where
+instance Interpretable VariableDeclaration () where
   interpret (VariableDeclaration var Nothing) = do
     s <- scope <$> get
     case s of
       Local -> do
         modify addLocal
-        interpret var
       Global -> do
         modify addGlobal
-        interpret var
     where
       addLocal t = t {
         localVars = Map.singleton (varName var) var <> localVars t
@@ -629,17 +633,15 @@ instance Interpretable VariableDeclaration Value where
         modify (\t -> t {
           localVars = Map.singleton (varName var) var' <> localVars t
         })
-        interpret var'
       Global -> do
         modify (\t -> t {
           globalVars = Map.singleton (varName var) var' <> globalVars t
         })
-        interpret var'
 
   interpret (VariableAssignment v) = interpret v
 
 
-instance Interpretable If Value where
+instance Interpretable If (Maybe Value) where
   interpret (If (Just cond) ib eb) = do
     v' <- interpret cond
     let (BoolValue cond') = castToBool v'
@@ -648,23 +650,33 @@ instance Interpretable If Value where
   interpret (If Nothing ib _) = do
     interpret ib
 
-
-instance Interpretable Loop Value where
+-- Take care on returning
+instance Interpretable Loop (Maybe Value) where
   interpret (WhileLoop l) = interpret l
+  interpret (ForLoop l) = interpret l
 
 
-instance Interpretable While Value where
+instance Interpretable While (Maybe Value) where
   interpret l@(While Nothing b) = do
     interpret b >> interpret l
 
   interpret l@(While (Just cond) b) = do
     v' <- interpret cond
     let (BoolValue cond') = castToBool v'
-    if cond' then interpret b >> interpret l else pure $ IntValue 0
+    if cond' then interpret b >> interpret l else pure Nothing
 
 
+instance Interpretable For (Maybe Value) where
+  interpret (For (ForHeader v c vu) b) = evalV v >> loop
+    where
+      evalV (Just v') = interpret v' >> pure Nothing
+      evalV Nothing = pure Nothing
+      evalC (Just c') = castToBool <$> interpret c'
+      evalC Nothing = pure $ BoolValue True
+      loop = evalC c >>= \(BoolValue cond) ->
+        if cond then interpret b >> evalV vu else pure Nothing
 
-instance Interpretable VariableUpdate Value where
+instance Interpretable VariableUpdate () where
   interpret (VariableUpdate id' e) = do
     locals <- localVars <$> get
     globals <- globalVars <$> get
@@ -674,12 +686,10 @@ instance Interpretable VariableUpdate Value where
         v' <- plugExprToVar e v
         let updatedLocals = Map.update (\_ -> Just v') id' locals
         modify (\x -> x { localVars = updatedLocals })
-        interpret e
       (_, Just v) -> do
         v' <- plugExprToVar e v
         let updatedGlobals = Map.update (\_ -> Just v') id' globals
         modify (\x -> x { globalVars = updatedGlobals })
-        interpret e
       (_, _) ->
         throwError $ "Variable " <> toSourceCode id' <> " is not defined."
 
