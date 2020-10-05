@@ -170,7 +170,6 @@ data While = While {
                    } deriving (Eq, Show)
 
 
-
 instance ToSourceCode AST where
   toSourceCode (AST gds) = foldMap (\gd -> toSourceCode gd <> "\n\n") gds
 
@@ -351,11 +350,17 @@ instance Castable Value where
     | otherwise = BoolValue True
   castToBool (BoolValue x) = BoolValue x
 
+data Scope
+  = Local
+  | Global
+  deriving (Eq, Show)
+
 data AppState = AppState {
     funcs      :: Map Identifier Function
   , globalVars :: Map Identifier Variable
   , localVars  :: Map Identifier Variable
   , currentFunc :: Function
+  , scope :: Scope
                          }
 
 newtype AppM a = AppM {
@@ -586,10 +591,69 @@ instance Interpretable [LocalDeclaration] Value where
 
 instance Interpretable LocalDeclaration Value where
   interpret (ReturnCall r) = interpret r
+  interpret (LocalExpr e) = interpret e
+  interpret (LocalVariableDeclaration v) = do
+    modify (\x -> x { scope = Local })
+    interpret v
 
 
 instance Interpretable Return Value where
   interpret (Return e) = interpret e
+
+instance Interpretable VariableDeclaration Value where
+  interpret (VariableDeclaration var Nothing) = do
+    s <- scope <$> get
+    case s of
+      Local -> do
+        modify addLocal
+        interpret var
+      Global -> do
+        modify addGlobal
+        interpret var
+    where
+      addLocal t = t {
+        localVars = Map.singleton (varName var) var <> localVars t
+        }
+      addGlobal t = t {
+        globalVars = Map.singleton (varName var) var <> globalVars t
+        }
+
+  interpret (VariableDeclaration var (Just e)) = do
+    s <- scope <$> get
+    var' <- plugExprToVar e var
+    case s of
+      Local -> do
+        modify (\t -> t {
+          localVars = Map.singleton (varName var) var' <> localVars t
+        })
+        interpret var'
+      Global -> do
+        modify (\t -> t {
+          globalVars = Map.singleton (varName var) var' <> globalVars t
+        })
+        interpret var'
+
+  interpret (VariableAssignment v) = interpret v
+
+
+instance Interpretable VariableUpdate Value where
+  interpret (VariableUpdate id' e) = do
+    locals <- localVars <$> get
+    globals <- globalVars <$> get
+
+    case (Map.lookup id' locals, Map.lookup id' globals) of
+      (Just v, _) -> do
+        v' <- plugExprToVar e v
+        let updatedLocals = Map.update (\_ -> Just v') id' locals
+        modify (\x -> x { localVars = updatedLocals })
+        interpret e
+      (_, Just v) -> do
+        v' <- plugExprToVar e v
+        let updatedGlobals = Map.update (\_ -> Just v') id' globals
+        modify (\x -> x { globalVars = updatedGlobals })
+        interpret e
+      (_, _) ->
+        throwError $ "Variable " <> toSourceCode id' <> " is not defined."
 
 
 instance Interpretable Variable Value where
