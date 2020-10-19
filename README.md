@@ -1,37 +1,56 @@
-# c-interpreter
+# C Interpreter
 
-Интерпертатор для С-подобного языка программирования. 
+This repository contains interpreter and pretty printer for a small subset of C language.
 
-### Требования
+This application build on Haskell programming language and relies on combination 
+of [Alex](https://hackage.haskell.org/package/alex) and [Happy](https://hackage.haskell.org/package/happy) 
+to generate code for a lexer and a parser. 
 
-Для сборки и запуска проекта необходимо установить [Haskell Stack tool](https://docs.haskellstack.org/en/stable/README/).
+*NOTE*: This application was created for education purpose.
 
-## Сборка
+### Prerequisites
 
-Для сборки и скачивания всех зависимостей необходимо запустить следующую команду:
+This project relies on the [Haskell Stack tool](https://docs.haskellstack.org/en/stable/README/).
+
+It is recommended to get Stack with batteries included by
+installing [Haskell Platform](https://www.haskell.org/platform/).
+
+## Build
+
+To build this project simply run
 
 ```sh
 stack build
 ```
 
-## Запуск
+This will install all dependencies, including a proper version of GHC.
 
-Так как приложение использует аргументы командной строки, которые плохо поддерживаются `stack exec`, после сборки проекта рекомендуется запусить следующую команду:
+## Run
+
+This project relies on [optparse-applicative](https://hackage.haskell.org/package/optparse-applicative)
+to parse command line arguments. 
+**Stack** has poor support of command line arguments, therefore it is recommended
+to run the following command to copy binaries into your *PATH*:
 
 ```sh
 stack install
 ```
 
-Теперь для интерпретации исходного текста программы на С-подобном языке необходимо запусить следующую команду:
+After it, to run interpreter you should run the following command:
 
 ``` sh
 c-interpreter-exe FILE_NAME
 ```
 
-Где **FILE_NAME** - это имя файла с исходным кодом.
+Where *FILE_NAME* is a path for a file with the source code.
 
-Для *pretty-print*'инга кода необходимо использовать следующую команду:
+To run *pretty-printer* you should execute the following command:
 
 ``` sh
 c-interpreter-exe SOURCE_FILE -p TARGET_FILE
 ```
+
+## Examples of C programs
+
+All examples of programs that can be interpreted via this interpretator 
+are placed into *code_samples* folder.
