@@ -26,6 +26,7 @@ dependencies:
 - transformers
 - mtl
 - optparse-applicative
+- hspec
 
 library:
   source-dirs: src
@@ -54,6 +55,7 @@ tests:
     - -with-rtsopts=-N
     dependencies:
     - c-interpreter
+    - hspec
     build-tools:
     - alex
     - happy

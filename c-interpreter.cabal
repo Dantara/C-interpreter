@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 7b6e2467c857e9d911cfae3a8200b86dc753c8846348aacc4cfe4ed0755b2b10
+-- hash: ae21deb5a1a46db9bcf2bf80cd6b85486fdbbfceae7cf74fdf2915102d123c24
 
 name:           c-interpreter
 version:        0.1.0.0
@@ -28,8 +28,14 @@ source-repository head
 library
   exposed-modules:
       Language
+      Language.Interpreter
+      Language.Interpreter.Cast
+      Language.Interpreter.Internals
+      Language.Interpreter.Types
       Language.Lexer
       Language.Parser
+      Language.PrettyPrinter
+      Language.PrettyPrinter.Types
       Language.Syntax
       Language.Syntax.AST
       Language.Syntax.Internals
@@ -42,6 +48,7 @@ library
       array
     , base >=4.7 && <5
     , containers
+    , hspec
     , mtl
     , optparse-applicative
     , transformers
@@ -62,6 +69,7 @@ executable c-interpreter-exe
     , base >=4.7 && <5
     , c-interpreter
     , containers
+    , hspec
     , mtl
     , optparse-applicative
     , transformers
@@ -71,6 +79,10 @@ test-suite c-interpreter-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Language.InterpreterSpec
+      Language.LexerSpec
+      Language.ParserSpec
+      Language.PrettyPrinterSpec
       Paths_c_interpreter
   hs-source-dirs:
       test
@@ -83,6 +95,7 @@ test-suite c-interpreter-test
     , base >=4.7 && <5
     , c-interpreter
     , containers
+    , hspec
     , mtl
     , optparse-applicative
     , transformers

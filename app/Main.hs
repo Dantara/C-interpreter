@@ -3,31 +3,32 @@ module Main where
 import           Control.Applicative
 import           Control.Monad.Except
 import           Control.Monad.State.Lazy
-import           Data.Either
-import           Data.Map.Strict           (Map)
-import qualified Data.Map.Strict           as Map
+import qualified Data.Map.Strict                as Map
+import           Language.Interpreter           (runUnwrapInterpreter)
+import           Language.Interpreter.Internals
+import           Language.Interpreter.Types
 import           Language.Lexer
 import           Language.Parser
-import           Language.Syntax.AST
-import           Language.Syntax.Internals
+import           Language.PrettyPrinter
 import           Options.Applicative
 
-file :: String
-file = "code_samples/hello-world.c"
 
 data Mode
   = Interpreter
   | PrettyPrinter String
+
 
 data AppConfig = AppConfig {
     sourceFile :: String
   , mode       :: Mode
   }
 
+
 parseConfig :: Parser AppConfig
 parseConfig = AppConfig
   <$> strArgument (metavar "SOURCE_FILE_NAME")
   <*> parseMode
+
 
 parseMode :: Parser Mode
 parseMode = flag Interpreter Interpreter (long "interpret" <> short 'i')
@@ -59,8 +60,11 @@ execApp config = do
     (Right ast, Interpreter) -> do
       let initState =
             AppState Map.empty Map.empty Map.empty Nothing Global
-      result <- runExceptT $ evalStateT (runApp $ interpret ast) initState
-      either putStrLn (pure $ pure ()) result
+      result <- runExceptT $ evalStateT (runApp $ runUnwrapInterpreter ast) initState
+      either printErr (pure $ pure ()) result
 
     (Right ast, PrettyPrinter target) ->
-      writeFile target (toSourceCode ast)
+      writeFile target (showSource ast)
+
+    where
+      printErr e = putStrLn $ "\nERROR OCCURED: " <> showInterpreterError e
