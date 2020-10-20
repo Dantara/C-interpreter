@@ -1,6 +1,14 @@
 # C Interpreter
 
-This repository contains interpreter and pretty printer for a small subset of C language.
+This repository contains interpreter and pretty printer for a C-like language.
+
+For now, language support:
+
+- Variables (assignments, reading and writing into console).
+- Data types (int, float, bool, string).
+- If statement.
+- Loops (For and While).
+- Functions (which always should return value).
 
 This application build on Haskell programming language and relies on combination 
 of [Alex](https://hackage.haskell.org/package/alex) and [Happy](https://hackage.haskell.org/package/happy) 
